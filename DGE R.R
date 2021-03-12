@@ -49,11 +49,68 @@ black_data<- subset(data_race2[,11:12])
 white_data2<- subset(white_data[,3:10])
 #remove the first row
 white_data3<- subset(white_data2[2:16,])
+colnames(white_data3) = c(" ", "TCGA-E2-A15E",	"TCGA-D8-A1JM",	"TCGA-AN-A0AT",	"TCGA-EW-A3E8",	"TCGA-BH-A0E0",	"TCGA-D8-A1JS",	"TCGA-E2-A2P5",	"TCGA-D8-A1J9",	"TCGA-BH-A0H5",	"TCGA-E2-A56Z")
+
             
 #make the dataframe into a matrix (should only have numbers)
-white_data_matrix<-data.matrix(white_data3)
+white_data_matrix <-data.matrix(white_data3)
+colnames(white_data_matrix) = c(" ", "TCGA-E2-A15E",	"TCGA-D8-A1JM",	"TCGA-AN-A0AT",	"TCGA-EW-A3E8",	"TCGA-BH-A0E0",	"TCGA-D8-A1JS",	"TCGA-E2-A2P5",	"TCGA-D8-A1J9",	"TCGA-BH-A0H5",	"TCGA-E2-A56Z")
 print(white_data_matrix)
+#create metaData
+
+
+countData<- data.frame(white_data_matrix)
+metaData<- data.frame(white_data_matrix)
+dds1<- DESeqDataSetFromMatrix(countData = countData,
+                              colData = metaData,
+                              )
+###################################potential new file
+
+countData <- data.frame(read.csv('Sample RNAseq w Clinical Data.csv', header = T, sep = ','))
+countData<- subset(countData, select=-c(1))
+colnames(countData) = c(" ", "TCGA-E2-A15E",	"TCGA-D8-A1JM",	"TCGA-AN-A0AT",	"TCGA-EW-A3E8",	"TCGA-BH-A0E0",	"TCGA-D8-A1JS",	"TCGA-E2-A2P5",	"TCGA-D8-A1J9",	"TCGA-BH-A0H5",	"TCGA-E2-A56Z")
+#missing gene name column when converted to matrix (not all numbers)
+countData2<- subset(countData, select=-c(1))
+countDataMatrix<- data.matrix(countData2)
+metaData<- data.frame(read.csv('Just Clinical Data.csv', header = T, sep = ','))
+metaData1 <- metaData[8,]
+colnames(metaData1) = c("status", "status"," ", "TCGA-E2-A15E",	"TCGA-D8-A1JM",	"TCGA-AN-A0AT",	"TCGA-EW-A3E8",	"TCGA-BH-A0E0",	"TCGA-D8-A1JS",	"TCGA-E2-A2P5",	"TCGA-D8-A1J9",	"TCGA-BH-A0H5",	"TCGA-E2-A56Z")
+metaData2 <- subset(metaData1, select=-c(1,2,3))
+metaData3 <- t(metaData2)
+colnames(metaData3)=c("condition")
+#if you want to add the gene names back, include the lines below (adds a "buffer" row)
+#buffer<- c(" ")
+#metaData4<-rbind(buffer, metaData3)
+#rownames(metaData4)=c(" ", "TCGA-E2-A15E",	"TCGA-D8-A1JM",	"TCGA-AN-A0AT",	"TCGA-EW-A3E8",	"TCGA-BH-A0E0",	"TCGA-D8-A1JS",	"TCGA-E2-A2P5",	"TCGA-D8-A1J9",	"TCGA-BH-A0H5",	"TCGA-E2-A56Z")
+metaDataMatrix<- data.matrix(metaData3)
+all(rownames(metaDataMatrix)==colnames(countDataMatrix))
+idx<-match(colnames(countData), rownames(metaData3))
+reordered_metaData<-(metaData4[idx,])
+print(reordered_metaData)
+all(rownames(reordered_metaData)==colnames(countData2))
+
+
+dds <- DESeqDataSetFromMatrix(countData=countDataMatrix, 
+                              colData=metaDataMatrix, 
+                              design = ~ condition, tidy = T)
+dds
+#variance stabilizing transformation
 #heatmap
-white_data_heatmap <- pheatmap(white_data_matrix, annotation_names_col = F, margins=c(5,10), scale="column", fontsize=11, angle_col = 45, display_numbers = T, fontsize_number = 6, treeheight_row = 30, treeheight_col = 30)
+white_data_heatmap <- pheatmap(white_data_matrix, annotation_names_col = T, margins=c(5,10), scale="row", fontsize=9, angle_col = 45, display_numbers = T, fontsize_number = 6, treeheight_row = 0, treeheight_col = 0, main = "Potential Molecular Targets for TNBC")
+print(white_data_heatmap)
 
+#MA plot
+maplot <- function (white_data_matrix, thresh=0.05, labelsig=TRUE, textcx=1, ...)
+with(white_data_matrix, plot(baseMean, log2FoldChange, pch=20, cex=.5, log="x", ...))
+with(subset(white_data_matrix, padj<thresh), points(baseMean, log2FoldChange, col="red", pch=20, cex=1.5))
+if (labelsig) {
+  }require(calibrate)
+  with(subset(white_data_matrix, padj<thresh), textxy(baseMean, log2FoldChange, labs=Gene, cex=textcx, col=2))  
 
+png(filename = "maplot.png", 480, 480, pointsize=20)
+maplot(white_data_matrix, main="MA Plot") dev.off()
+
+#Mean and Variance plot
+#PCA
+
+  
